@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+# https://github.com/makew0rld/rfcts
+
+# More code examples: https://freetsa.org/index_en.php#tcp
+# Also see the manpage for openssl-ts
+
+set -euo pipefail
+
+server="http://timestamp.digicert.com"
+tsr=""
+
+POSITIONAL_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -s|--server)
+      server="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -o|--out)
+      tsr="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -*)
+      echo "Unknown option: $1"
+      echo "help: $0 [-s/--server URL] [-o/--out FILE.TSR]"
+      exit 1
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1") # save positional arg
+      shift # past argument
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+if [[ "${#POSITIONAL_ARGS[@]}" -eq 0 ]]; then
+    echo "help: $0 [-s/--server URL] [-o/--out FILE.TSR]"
+    exit 1
+fi
+
+if [[ "${#POSITIONAL_ARGS[@]}" -ne 1 ]]; then
+    echo "Only a single file can be given"
+    exit 1
+fi
+
+input="${POSITIONAL_ARGS[0]}"
+if [ -z "${tsr}" ]; then
+    tsr="$input.tsr"
+fi
+
+tsq="$(mktemp)"
+
+# Use some defaults: SHA-256, include nonce
+openssl ts -query -data "$1" -cert -out "$tsq"
+
+status_code=$(curl --no-progress-meter -H "Content-Type: application/timestamp-query" \
+    --write-out "%{http_code}" --data-binary '@'"$tsq" "$server" -o "$tsr")
+
+if [[ $status_code -ne 200 ]]; then
+    echo "Server did not return 200, aborting"
+    rm -rf "$tsr" "$tsq"
+    exit 1
+fi
+
+echo "Created $tsr"
+
+# Cleanup
+rm -rf "$tsq"

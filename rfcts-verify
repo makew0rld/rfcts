@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# https://github.com/makew0rld/rfcts
+
+# More code examples: https://freetsa.org/index_en.php#tcp
+# Also see the manpage for openssl-ts
+
+set -eo pipefail
+
+if [ -z "$2" ]; then
+    echo "help: $0 DATA_FILE TSR_FILE"
+    exit 1
+fi
+
+openssl ts -verify -in "$2" -data "$1" -CAfile /etc/ssl/certs/ca-certificates.crt 2> /dev/null
+openssl ts -reply -in "$2" -text 2> /dev/null | grep '^Time stamp:'
