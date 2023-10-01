@@ -2,6 +2,7 @@
 
 This repo contains of couple of Bash scripts for creating and verifying [RFC 3161](https://datatracker.ietf.org/doc/html/rfc3161) timestamps. You can learn more about trusted timestamping and the context for this repo in my [blog post](https://makeworld.space/2023/09/time_for_timestamping.html).
 
+General usage:
 ```
 $ ./rfcts
 help: ./rfcts [-s/--server URL] [-o/--out FILE.TSR]
@@ -19,6 +20,17 @@ Time stamp: Sep  7 04:00:48 2023 GMT
 
 $ ./rfcts-verify myfile.jpg bad.tsr
 Verification: FAILED
+```
+
+Using data from stdin:
+```
+$ echo -n 'some data' | rfcts -o /tmp/test.tsr /dev/stdin
+Using configuration from /etc/ssl/openssl.cnf
+Created /tmp/test.tsr
+
+$ echo -n 'some data' | rfcts-verify /dev/stdin /tmp/test.tsr
+Verification: OK
+Time stamp: Oct  1 04:20:48 2023 GMT
 ```
 
 The default timestamp authority is [DigiCert](https://knowledge.digicert.com/generalinformation/INFO4231.html), as they are a reputable and established organization.
